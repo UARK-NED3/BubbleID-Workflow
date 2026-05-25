@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bubbleid-agent"
+version = "0.1.0"
+description = "Workflow agent for BubbleID boiling image analysis."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "UARK-NED3" }
+]
+dependencies = [
+  "openai>=1.0.0",
+  "python-dotenv>=1.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0"
+]
+
+[project.scripts]
+bubbleid-agent = "bubbleid_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

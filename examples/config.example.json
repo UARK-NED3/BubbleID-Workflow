@@ -1,0 +1,12 @@
+{
+  "video_path": "data/case-a/clip.avi",
+  "frames_dir": "data/case-a/frames",
+  "output_dir": "outputs/case-a",
+  "segmentation_weights": "weights/model_final.pth",
+  "classification_weights": "weights/classifier.pth",
+  "device": "cpu",
+  "frame_rate_fps": 3000,
+  "pixel_size_um": 12.5,
+  "run_id": "case-a",
+  "confidence_threshold": 0.5
+}
