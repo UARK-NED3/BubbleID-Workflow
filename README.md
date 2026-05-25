@@ -32,7 +32,15 @@ For full BubbleID analysis, install BubbleID and its CV dependencies following t
 
 ## Configuration
 
-Copy `examples/config.example.json` and update paths for your experiment:
+Create a config interactively:
+
+```bash
+bubbleid-agent init-case configs/case-a.json
+```
+
+The wizard asks for your video, frame folder, output folder, BubbleID model weights, device, frame rate, pixel calibration, run ID, and confidence threshold.
+
+You can also copy `examples/config.example.json` and update paths for your experiment:
 
 ```json
 {
@@ -51,22 +59,28 @@ Copy `examples/config.example.json` and update paths for your experiment:
 
 ## Commands
 
+Create a case config:
+
+```bash
+bubbleid-agent init-case configs/case-a.json
+```
+
 Check inputs:
 
 ```bash
-bubbleid-agent check-project examples/config.example.json
+bubbleid-agent check-project configs/case-a.json
 ```
 
 Write a manifest without invoking BubbleID:
 
 ```bash
-bubbleid-agent run-analysis examples/config.example.json --dry-run
+bubbleid-agent run-analysis configs/case-a.json --dry-run
 ```
 
 Run BubbleID:
 
 ```bash
-bubbleid-agent run-analysis examples/config.example.json
+bubbleid-agent run-analysis configs/case-a.json
 ```
 
 Inspect outputs:

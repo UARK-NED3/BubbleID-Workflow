@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .checks import check_project
 from .config import load_config
+from .init_case import create_config_interactively
 from .inspector import inspect_outputs
 from .reporter import write_report
 from .runner import run_analysis
@@ -47,9 +48,18 @@ def cmd_write_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_init_case(args: argparse.Namespace) -> int:
+    create_config_interactively(args.config)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="bubbleid-agent", description="Workflow agent for BubbleID boiling image analysis.")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    init = subparsers.add_parser("init-case", help="Interactively create a BubbleID-Agent config file.")
+    init.add_argument("config", help="Destination JSON config path.")
+    init.set_defaults(func=cmd_init_case)
 
     check = subparsers.add_parser("check-project", help="Validate inputs before running BubbleID.")
     check.add_argument("config", help="Path to a BubbleID-Agent JSON config.")
