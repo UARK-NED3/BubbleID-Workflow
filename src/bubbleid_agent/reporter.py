@@ -15,7 +15,7 @@ def _offline_report(manifest: dict, inspection: InspectionReport) -> str:
         "# BubbleID Analysis Report\n\n"
         f"**Run ID:** {manifest.get('run_id', inspection.extension)}\n\n"
         "## Methods\n\n"
-        "BubbleID-Agent prepared a reproducible analysis summary from the run manifest and output inspection. "
+        "BubbleID Workflow prepared a reproducible analysis summary from the run manifest and output inspection. "
         "BubbleID remains the source of segmentation, classification, tracking, vapor-fraction, departure, and interface-velocity outputs.\n\n"
         "## Run Metadata\n\n"
         f"- Frame rate: {manifest.get('frame_rate_fps', 'not provided')} fps\n"

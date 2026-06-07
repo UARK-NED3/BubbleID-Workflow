@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .checks import check_project
 from .config import load_config
+from .image_case import create_image_case_interactively, load_image_case, run_image_case
 from .init_case import create_config_interactively
 from .inspector import inspect_outputs
 from .reporter import write_report
@@ -77,11 +78,30 @@ def cmd_segment_images(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_init_image_case(args: argparse.Namespace) -> int:
+    create_image_case_interactively(args.config)
+    return 0
+
+
+def cmd_run_image_case(args: argparse.Namespace) -> int:
+    result = run_image_case(load_image_case(args.config))
+    _print_json(
+        {
+            "csv_path": result.csv_path,
+            "summary_path": result.summary_path,
+            "overlay_dir": result.overlay_dir,
+            "mask_dir": result.mask_dir,
+            "image_count": len(result.rows),
+        }
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="bubbleid-agent", description="Workflow agent for BubbleID boiling image analysis.")
+    parser = argparse.ArgumentParser(prog="bubbleid-workflow", description="Reproducible workflow toolkit for BubbleID boiling image analysis.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    init = subparsers.add_parser("init-case", help="Interactively create a BubbleID-Agent config file.")
+    init = subparsers.add_parser("init-case", help="Interactively create a BubbleID workflow config file.")
     init.add_argument("config", help="Destination JSON config path.")
     init.set_defaults(func=cmd_init_case)
 
@@ -96,12 +116,20 @@ def build_parser() -> argparse.ArgumentParser:
     segment.add_argument("--no-overlays", action="store_true", help="Do not write overlay JPG files.")
     segment.set_defaults(func=cmd_segment_images)
 
+    init_image = subparsers.add_parser("init-image-case", help="Interactively create a still-image analysis config.")
+    init_image.add_argument("config", help="Destination image-case JSON config path.")
+    init_image.set_defaults(func=cmd_init_image_case)
+
+    run_image = subparsers.add_parser("run-image-case", help="Run a still-image analysis config.")
+    run_image.add_argument("config", help="Path to an image-case JSON config.")
+    run_image.set_defaults(func=cmd_run_image_case)
+
     check = subparsers.add_parser("check-project", help="Validate inputs before running BubbleID.")
-    check.add_argument("config", help="Path to a BubbleID-Agent JSON config.")
+    check.add_argument("config", help="Path to a BubbleID workflow JSON config.")
     check.set_defaults(func=cmd_check_project)
 
     run = subparsers.add_parser("run-analysis", help="Run BubbleID and write a manifest.")
-    run.add_argument("config", help="Path to a BubbleID-Agent JSON config.")
+    run.add_argument("config", help="Path to a BubbleID workflow JSON config.")
     run.add_argument("--dry-run", action="store_true", help="Write the manifest without invoking BubbleID.")
     run.set_defaults(func=cmd_run_analysis)
 

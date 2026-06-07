@@ -8,7 +8,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Repo = "UARK-NED3/BubbleID-Agent"
+$Repo = "UARK-NED3/BubbleID-Workflow"
 $PythonExe = ".venv-bubbleid-demo\Scripts\python.exe"
 $ImagesZip = Join-Path $DemoRoot "selected-images.zip"
 $ImagesDir = Join-Path $DemoRoot "selected-images"
@@ -100,7 +100,7 @@ if ($ForceDownload -or -not (Get-ChildItem $ImagesDir -Filter *.jpg -ErrorAction
     Expand-Archive -Path $ImagesZip -DestinationPath $ImagesDir -Force
 }
 
-Write-Step "Running BubbleID-Agent segmentation"
+Write-Step "Running BubbleID Workflow segmentation"
 & $PythonExe -m bubbleid_agent.cli segment-images $ImagesDir $WeightsPath $OutputDir --threshold $Threshold --device $Device
 
 Write-Step "Building overlay contact sheet"

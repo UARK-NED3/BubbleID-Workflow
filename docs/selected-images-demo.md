@@ -1,6 +1,6 @@
 # Selected Images Demo Workflow
 
-This demo shows how to use BubbleID-Agent with BubbleID pretrained instance-segmentation weights to compute vapor fraction from still boiling images.
+This demo shows how to use BubbleID Workflow with BubbleID pretrained instance-segmentation weights to compute vapor fraction from still boiling images.
 
 The command expects:
 
@@ -11,7 +11,7 @@ The command expects:
 Run:
 
 ```bash
-bubbleid-agent segment-images data/selected-images weights/model_1class.pth outputs/selected-images --threshold 0.4 --device cpu
+bubbleid-workflow segment-images data/selected-images weights/model_1class.pth outputs/selected-images --threshold 0.4 --device cpu
 ```
 
 Outputs:

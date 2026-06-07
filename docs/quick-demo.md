@@ -4,18 +4,18 @@ This demo is designed for students who are experimentalists and have limited mac
 
 The demo does four things:
 
-1. Downloads selected demo images and `model_1class.pth` from the BubbleID-Agent GitHub release.
-2. Runs BubbleID-Agent still-image segmentation.
+1. Downloads selected demo images and `model_1class.pth` from the BubbleID Workflow GitHub release.
+2. Runs BubbleID Workflow still-image segmentation.
 3. Computes vapor fraction for each image.
 4. Saves overlays, masks, a CSV table, a summary JSON file, and a contact sheet.
 
 ## Windows Quick Start
 
-Open PowerShell in the BubbleID-Agent repo:
+Open PowerShell in the BubbleID Workflow repo:
 
 ```powershell
-git clone https://github.com/UARK-NED3/BubbleID-Agent.git
-cd BubbleID-Agent
+git clone https://github.com/UARK-NED3/BubbleID-Workflow.git
+cd BubbleID-Workflow
 powershell -ExecutionPolicy Bypass -File .\scripts\run_selected_images_demo.ps1
 ```
 
@@ -45,7 +45,7 @@ Important files:
 
 ## What The Numbers Mean
 
-For each still image, BubbleID-Agent reports:
+For each still image, BubbleID Workflow reports:
 
 ```text
 vapor_fraction = union(predicted bubble mask pixels) / total image pixels
@@ -66,7 +66,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_selected_images_demo.ps1 
 Once the demo works, replace the image folder and weights in the command:
 
 ```powershell
-.\.venv-bubbleid-demo\Scripts\python.exe -m bubbleid_agent.cli segment-images "path\to\your\images" "path\to\model_1class.pth" "outputs\my-case" --threshold 0.4 --device cpu
+.\.venv-bubbleid-demo\Scripts\bubbleid-workflow.exe init-image-case configs\my-case.json
+.\.venv-bubbleid-demo\Scripts\bubbleid-workflow.exe run-image-case configs\my-case.json
 ```
 
 Review the overlays before using the CSV in a report, thesis, or publication.

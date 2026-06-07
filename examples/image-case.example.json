@@ -1,0 +1,10 @@
+{
+  "images_dir": "data/selected-images",
+  "weights": "weights/model_1class.pth",
+  "output_dir": "outputs/selected-images",
+  "threshold": 0.4,
+  "device": "cpu",
+  "num_classes": 1,
+  "save_masks": true,
+  "save_overlays": true
+}

@@ -1,8 +1,8 @@
-# BubbleID Agent MVP Implementation Plan
+# BubbleID Workflow MVP Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a separate BubbleID-Agent Python CLI that validates BubbleID projects, runs BubbleID reproducibly, inspects outputs, and drafts research reports.
+**Goal:** Build a separate BubbleID Workflow Python CLI that validates BubbleID projects, runs BubbleID reproducibly, inspects outputs, and drafts research reports.
 
 **Architecture:** The repo is a thin orchestration layer around BubbleID. Core modules own config loading, project validation, BubbleID invocation, output inspection, report generation, and CLI wiring. The OpenAI report writer uses the Responses API when a key is available and provides a deterministic offline fallback for tests and non-API usage.
 
@@ -74,7 +74,7 @@ Expose `check-project`, `run-analysis`, `inspect-outputs`, and `write-report`.
 
 - [ ] **Step 1: Document purpose and install**
 
-Explain that BubbleID-Agent is separate from BubbleID and depends on BubbleID for scientific CV analysis.
+Explain that BubbleID Workflow is separate from BubbleID and depends on BubbleID for scientific CV analysis.
 
 - [ ] **Step 2: Document commands**
 
@@ -97,4 +97,4 @@ Expected: command list is shown.
 
 - [ ] **Step 3: Create GitHub repository**
 
-Create `UARK-NED3/BubbleID-Agent` and push the initial branch.
+Create the UARK-NED3 BubbleID workflow repository and push the initial branch.

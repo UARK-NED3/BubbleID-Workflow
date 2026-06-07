@@ -32,7 +32,7 @@ def create_config_interactively(
 ) -> Path:
     target = Path(config_path).expanduser().resolve()
 
-    output_fn("BubbleID-Agent case setup")
+    output_fn("BubbleID Workflow case setup")
     output_fn("Enter paths relative to this config file, or absolute paths if preferred.")
 
     video_path = _ask(input_fn, "Boiling video path (.avi)")
@@ -62,5 +62,5 @@ def create_config_interactively(
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
     output_fn(f"Wrote config: {target}")
-    output_fn(f"Next: bubbleid-agent check-project {target}")
+    output_fn(f"Next: bubbleid-workflow check-project {target}")
     return target

@@ -10,5 +10,7 @@ def test_cli_help_exits_successfully(capsys):
     output = capsys.readouterr().out
     assert "check-project" in output
     assert "init-case" in output
+    assert "init-image-case" in output
+    assert "run-image-case" in output
     assert "segment-images" in output
     assert "write-report" in output

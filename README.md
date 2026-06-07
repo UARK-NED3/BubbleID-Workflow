@@ -1,12 +1,12 @@
-# BubbleID-Agent
+# BubbleID Workflow Toolkit
 
-BubbleID-Agent is a workflow assistant for [BubbleID](https://github.com/cldunlap73/BubbleID), the computer-vision framework for boiling bubble dynamics analysis.
+BubbleID Workflow Toolkit is a reproducible workflow layer for [BubbleID](https://github.com/cldunlap73/BubbleID), the computer-vision framework for boiling bubble dynamics analysis.
 
-BubbleID remains the scientific engine for segmentation, classification, tracking, vapor fraction, departure rate, bubble statistics, and interface velocity. BubbleID-Agent handles the surrounding research workflow: project checks, reproducible manifests, output inspection, and report drafting.
+BubbleID remains the scientific engine for segmentation, classification, tracking, vapor fraction, departure rate, bubble statistics, and interface velocity. This toolkit handles the surrounding research workflow: project checks, reproducible configs, still-image segmentation runs, output inspection, and report drafting.
 
 ## Why This Repo Is Separate
 
-Keeping the agent separate protects the core BubbleID package from fast-changing LLM dependencies and lab-specific orchestration. This repo can evolve quickly while BubbleID stays focused on validated computer-vision analysis.
+Keeping the workflow toolkit separate protects the core BubbleID package from fast-changing automation, demo, and lab-specific orchestration. This repo can evolve quickly while BubbleID stays focused on validated computer-vision analysis.
 
 ## Current Capabilities
 
@@ -32,8 +32,8 @@ The script downloads demo images and pretrained one-class BubbleID weights from 
 ## Installation
 
 ```bash
-git clone https://github.com/UARK-NED3/BubbleID-Agent.git
-cd BubbleID-Agent
+git clone https://github.com/UARK-NED3/BubbleID-Workflow.git
+cd BubbleID-Workflow
 python -m venv .venv
 .\.venv\Scripts\activate
 pip install -e .[dev]
@@ -56,7 +56,7 @@ If building from a Visual Studio developer prompt, set `DISTUTILS_USE_SDK=1` bef
 Create a config interactively:
 
 ```bash
-bubbleid-agent init-case configs/case-a.json
+bubbleid-workflow init-case configs/case-a.json
 ```
 
 The wizard asks for your video, frame folder, output folder, BubbleID model weights, device, frame rate, pixel calibration, run ID, and confidence threshold.
@@ -80,52 +80,64 @@ You can also copy `examples/config.example.json` and update paths for your exper
 
 ## Commands
 
-Segment still images and compute vapor fraction:
+Segment still images and compute vapor fraction directly:
 
 ```bash
-bubbleid-agent segment-images data/selected-images weights/model_1class.pth outputs/selected-images --threshold 0.4 --device cpu
+bubbleid-workflow segment-images data/selected-images weights/model_1class.pth outputs/selected-images --threshold 0.4 --device cpu
+```
+
+Create a reusable still-image case config:
+
+```bash
+bubbleid-workflow init-image-case configs/my-image-case.json
+```
+
+Run that config:
+
+```bash
+bubbleid-workflow run-image-case configs/my-image-case.json
 ```
 
 Create a case config:
 
 ```bash
-bubbleid-agent init-case configs/case-a.json
+bubbleid-workflow init-case configs/case-a.json
 ```
 
 Check inputs:
 
 ```bash
-bubbleid-agent check-project configs/case-a.json
+bubbleid-workflow check-project configs/case-a.json
 ```
 
 Write a manifest without invoking BubbleID:
 
 ```bash
-bubbleid-agent run-analysis configs/case-a.json --dry-run
+bubbleid-workflow run-analysis configs/case-a.json --dry-run
 ```
 
 Run BubbleID:
 
 ```bash
-bubbleid-agent run-analysis configs/case-a.json
+bubbleid-workflow run-analysis configs/case-a.json
 ```
 
 Inspect outputs:
 
 ```bash
-bubbleid-agent inspect-outputs outputs/case-a --extension case-a
+bubbleid-workflow inspect-outputs outputs/case-a --extension case-a
 ```
 
 Write a report without an API call:
 
 ```bash
-bubbleid-agent write-report outputs/case-a/manifest_case-a.json outputs/case-a reports/case-a.md --extension case-a --offline
+bubbleid-workflow write-report outputs/case-a/manifest_case-a.json outputs/case-a reports/case-a.md --extension case-a --offline
 ```
 
 Write a report with OpenAI:
 
 ```bash
-bubbleid-agent write-report outputs/case-a/manifest_case-a.json outputs/case-a reports/case-a.md --extension case-a
+bubbleid-workflow write-report outputs/case-a/manifest_case-a.json outputs/case-a reports/case-a.md --extension case-a
 ```
 
 ## OpenAI Setup
@@ -140,6 +152,6 @@ Do not commit `.env.local` or any API keys.
 
 ## Research Notes
 
-BubbleID-Agent does not decide whether BubbleID results are scientifically valid. It flags workflow risks that a boiling researcher should inspect, such as low frame rate for tracking, missing calibration, missing output files, or incomplete model outputs. Physical claims about CHF, interface velocity, departure dynamics, or surface comparisons should still be grounded in experiment metadata, uncertainty, and visual review of segmentation/tracking results.
+BubbleID Workflow Toolkit does not decide whether BubbleID results are scientifically valid. It flags workflow risks that a boiling researcher should inspect, such as low frame rate for tracking, missing calibration, missing output files, or incomplete model outputs. Physical claims about CHF, interface velocity, departure dynamics, or surface comparisons should still be grounded in experiment metadata, uncertainty, and visual review of segmentation/tracking results.
 
 For still images, `segment-images` reports vapor fraction as the union of predicted bubble-mask pixels divided by total image pixels. This supports frame-wise quantities such as vapor fraction and detected bubble count; it does not produce tracking, departure frequency, or interface velocity because those require time-resolved image sequences.
