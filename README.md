@@ -19,6 +19,16 @@ Keeping the agent separate protects the core BubbleID package from fast-changing
 - Draft a Markdown report from the manifest and inspection results.
 - Fall back to deterministic local report generation when no OpenAI API key is available.
 
+## Quick Demo
+
+For a student-friendly still-image demo on Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_selected_images_demo.ps1
+```
+
+The script downloads demo images and pretrained one-class BubbleID weights from the repo release, installs the needed CV dependencies in `.venv-bubbleid-demo`, runs segmentation, computes vapor fraction, and writes overlays plus a CSV file. See [docs/quick-demo.md](docs/quick-demo.md) for the full walkthrough.
+
 ## Installation
 
 ```bash
