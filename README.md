@@ -13,6 +13,7 @@ Keeping the agent separate protects the core BubbleID package from fast-changing
 - Validate a BubbleID project before analysis.
 - Warn when metadata are missing, such as frame rate or pixel calibration.
 - Warn when frame rate is low for tracking-based dynamics.
+- Segment still images with BubbleID/Detectron2 instance-segmentation weights and compute vapor fraction.
 - Run BubbleID through its `DataAnalysis` class and write a manifest.
 - Inspect expected BubbleID outputs for missing files.
 - Draft a Markdown report from the manifest and inspection results.
@@ -29,6 +30,16 @@ pip install -e .[dev]
 ```
 
 For full BubbleID analysis, install BubbleID and its CV dependencies following the BubbleID README. The `--dry-run`, inspection, and offline reporting paths work without importing BubbleID.
+
+For still-image segmentation with pretrained BubbleID Mask R-CNN weights, install PyTorch, OpenCV, and Detectron2 in the environment. On Windows, Detectron2 usually needs Visual Studio Build Tools and may need to be built from source:
+
+```bash
+python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+python -m pip install opencv-python matplotlib pycocotools fvcore iopath yacs
+python -m pip install --no-build-isolation "git+https://github.com/facebookresearch/detectron2.git"
+```
+
+If building from a Visual Studio developer prompt, set `DISTUTILS_USE_SDK=1` before installing Detectron2.
 
 ## Configuration
 
@@ -58,6 +69,12 @@ You can also copy `examples/config.example.json` and update paths for your exper
 ```
 
 ## Commands
+
+Segment still images and compute vapor fraction:
+
+```bash
+bubbleid-agent segment-images data/selected-images weights/model_1class.pth outputs/selected-images --threshold 0.4 --device cpu
+```
 
 Create a case config:
 
@@ -114,3 +131,5 @@ Do not commit `.env.local` or any API keys.
 ## Research Notes
 
 BubbleID-Agent does not decide whether BubbleID results are scientifically valid. It flags workflow risks that a boiling researcher should inspect, such as low frame rate for tracking, missing calibration, missing output files, or incomplete model outputs. Physical claims about CHF, interface velocity, departure dynamics, or surface comparisons should still be grounded in experiment metadata, uncertainty, and visual review of segmentation/tracking results.
+
+For still images, `segment-images` reports vapor fraction as the union of predicted bubble-mask pixels divided by total image pixels. This supports frame-wise quantities such as vapor fraction and detected bubble count; it does not produce tracking, departure frequency, or interface velocity because those require time-resolved image sequences.
