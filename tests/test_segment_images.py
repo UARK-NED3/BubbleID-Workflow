@@ -5,6 +5,7 @@ import numpy as np
 
 from bubbleid_agent.segment_images import (
     ImageSegmentationResult,
+    apply_mask_overlay,
     remove_substrate_from_masks,
     substrate_pixel_mask,
     vapor_fraction_from_masks,
@@ -103,3 +104,16 @@ def test_aggressive_substrate_filter_removes_lower_neutral_band():
 
     assert filtered_masks[0, 2:5, 4:6].all()
     assert not filtered_masks[0, 7, 4]
+
+
+def test_apply_mask_overlay_uses_consistent_red_tint():
+    image = np.zeros((2, 2, 3), dtype=np.uint8)
+    image[0, 0, :] = [240, 240, 240]
+    image[1, 1, :] = [20, 20, 20]
+    mask = np.array([[True, False], [False, True]])
+
+    overlay = apply_mask_overlay(image, mask, alpha=0.5)
+
+    assert overlay[0, 0, 2] > overlay[0, 0, 1]
+    assert overlay[1, 1, 2] > overlay[1, 1, 1]
+    assert overlay[0, 1].tolist() == [0, 0, 0]

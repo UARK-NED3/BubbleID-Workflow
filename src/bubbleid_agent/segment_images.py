@@ -154,6 +154,16 @@ def remove_substrate_from_masks(
     return filtered_masks, filtered_scores, boxes
 
 
+def apply_mask_overlay(image_bgr: np.ndarray, mask: np.ndarray, color_bgr: tuple[int, int, int] = (35, 35, 220), alpha: float = 0.5) -> np.ndarray:
+    overlay = image_bgr.copy()
+    if mask.any():
+        mask_bool = mask.astype(bool)
+        color = np.array(color_bgr, dtype=np.float32)
+        pixels = overlay[mask_bool].astype(np.float32)
+        overlay[mask_bool] = np.clip((1.0 - alpha) * pixels + alpha * color, 0, 255).astype(np.uint8)
+    return overlay
+
+
 def write_results_csv(rows: Iterable[ImageSegmentationResult], csv_path: str | Path) -> Path:
     path = Path(csv_path).expanduser().resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -249,12 +259,9 @@ def segment_images(
         if save_masks:
             cv2.imwrite(str(mask_dir / f"{image_path.stem}_mask.png"), mask_u8)
         if save_overlays:
-            overlay = image.copy()
-            color_layer = np.zeros_like(overlay)
-            color_layer[:, :, 2] = mask_u8
-            overlay = cv2.addWeighted(overlay, 1.0, color_layer, 0.35, 0)
+            overlay = apply_mask_overlay(image, combined)
             contours, _ = cv2.findContours(mask_u8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            cv2.drawContours(overlay, contours, -1, (0, 255, 255), 2)
+            cv2.drawContours(overlay, contours, -1, (35, 35, 220), 2)
             for idx, box in enumerate(boxes):
                 x1, y1, x2, y2 = [int(value) for value in box]
                 cv2.rectangle(overlay, (x1, y1), (x2, y2), (0, 255, 0), 1)
