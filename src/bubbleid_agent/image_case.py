@@ -23,6 +23,7 @@ class ImageCaseConfig:
     save_masks: bool = True
     save_overlays: bool = True
     filter_substrate: bool = True
+    substrate_filter_strength: str = "aggressive"
 
     def write(self, path: str | Path) -> Path:
         target = Path(path).expanduser().resolve()
@@ -57,6 +58,7 @@ def load_image_case(path: str | Path) -> ImageCaseConfig:
         save_masks=bool(raw.get("save_masks", True)),
         save_overlays=bool(raw.get("save_overlays", True)),
         filter_substrate=bool(raw.get("filter_substrate", True)),
+        substrate_filter_strength=raw.get("substrate_filter_strength", "aggressive"),
     )
 
 
@@ -83,6 +85,7 @@ def create_image_case_interactively(
     device = _ask(input_fn, "Device", "cpu")
     num_classes = int(_ask(input_fn, "Number of segmentation classes", "1"))
     filter_substrate = _ask(input_fn, "Remove dark lower substrate from masks", "yes").lower() in {"y", "yes", "true", "1"}
+    substrate_filter_strength = _ask(input_fn, "Substrate filter strength", "aggressive")
     config = ImageCaseConfig(
         images_dir=Path(images_dir),
         weights=Path(weights),
@@ -91,6 +94,7 @@ def create_image_case_interactively(
         device=device,
         num_classes=num_classes,
         filter_substrate=filter_substrate,
+        substrate_filter_strength=substrate_filter_strength,
     )
     written = config.write(target)
     output_fn(f"Wrote image-case config: {written}")
@@ -109,4 +113,5 @@ def run_image_case(config: ImageCaseConfig, segment_fn=segment_images) -> Segmen
         save_masks=config.save_masks,
         save_overlays=config.save_overlays,
         filter_substrate=config.filter_substrate,
+        substrate_filter_strength=config.substrate_filter_strength,
     )

@@ -132,14 +132,21 @@ def remove_substrate_from_masks(
     masks: np.ndarray,
     scores: np.ndarray,
     image_bgr: np.ndarray,
+    strength: str = "aggressive",
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     if masks.size == 0 or masks.shape[0] == 0:
         height, width = image_bgr.shape[:2]
         return np.zeros((0, height, width), dtype=bool), np.array([]), np.empty((0, 4))
-    substrate = substrate_pixel_mask(image_bgr)
     filtered_masks = masks.astype(bool).copy()
-    for idx, mask in enumerate(filtered_masks):
-        filtered_masks[idx] = mask & ~_slab_like_substrate(mask, substrate)
+    if strength == "conservative":
+        substrate = substrate_pixel_mask(image_bgr)
+        for idx, mask in enumerate(filtered_masks):
+            filtered_masks[idx] = mask & ~_slab_like_substrate(mask, substrate)
+    elif strength == "aggressive":
+        substrate = substrate_pixel_mask(image_bgr, lower_fraction=0.62, max_chroma=35, max_intensity=95)
+        filtered_masks &= ~substrate
+    else:
+        raise ValueError(f"Unknown substrate filter strength: {strength}")
     keep = filtered_masks.reshape(filtered_masks.shape[0], -1).sum(axis=1) > 0
     filtered_masks = filtered_masks[keep]
     filtered_scores = scores[keep] if len(scores) == len(keep) else scores
@@ -195,6 +202,7 @@ def segment_images(
     save_masks: bool = True,
     save_overlays: bool = True,
     filter_substrate: bool = True,
+    substrate_filter_strength: str = "aggressive",
 ) -> SegmentImagesResult:
     import cv2
 
@@ -233,7 +241,7 @@ def segment_images(
             scores = np.array([])
             boxes = np.empty((0, 4))
         if filter_substrate:
-            masks, scores, boxes = remove_substrate_from_masks(masks, scores, image)
+            masks, scores, boxes = remove_substrate_from_masks(masks, scores, image, strength=substrate_filter_strength)
         combined = np.any(masks, axis=0) if len(masks) else np.zeros((height, width), dtype=bool)
 
         vapor_pixels, vapor_fraction = vapor_fraction_from_masks(masks, height, width)
@@ -278,6 +286,7 @@ def segment_images(
         "device": device,
         "num_classes": num_classes,
         "filter_substrate": filter_substrate,
+        "substrate_filter_strength": substrate_filter_strength if filter_substrate else "none",
         "weights": str(weights_path),
         "mean_vapor_fraction": float(np.mean(vapor_fractions)),
         "min_vapor_fraction": float(np.min(vapor_fractions)),

@@ -74,7 +74,7 @@ def test_substrate_pixel_mask_finds_dark_neutral_lower_slab():
     assert not substrate[4, 1]
 
 
-def test_remove_substrate_from_masks_keeps_bubble_and_removes_slab():
+def test_conservative_substrate_filter_keeps_bubble_and_removes_slab():
     image = np.full((6, 6, 3), 245, dtype=np.uint8)
     image[4:, :, :] = [45, 45, 45]
     image[1:4, 2:4, :] = [35, 35, 190]
@@ -82,10 +82,24 @@ def test_remove_substrate_from_masks_keeps_bubble_and_removes_slab():
     mask[0, 1:5, 2:4] = True
     scores = np.array([0.92])
 
-    filtered_masks, filtered_scores, boxes = remove_substrate_from_masks(mask, scores, image)
+    filtered_masks, filtered_scores, boxes = remove_substrate_from_masks(mask, scores, image, strength="conservative")
 
     assert filtered_scores.tolist() == [0.92]
     assert filtered_masks.shape == (1, 6, 6)
     assert filtered_masks[0, 1:4, 2:4].all()
     assert not filtered_masks[0, 4, 2]
     assert boxes.tolist() == [[2.0, 1.0, 4.0, 4.0]]
+
+
+def test_aggressive_substrate_filter_removes_lower_neutral_band():
+    image = np.full((10, 10, 3), 245, dtype=np.uint8)
+    image[7:, :, :] = [80, 80, 80]
+    image[2:5, 4:6, :] = [35, 35, 190]
+    mask = np.zeros((1, 10, 10), dtype=bool)
+    mask[0, 2:9, 2:8] = True
+    scores = np.array([0.81])
+
+    filtered_masks, _, _ = remove_substrate_from_masks(mask, scores, image, strength="aggressive")
+
+    assert filtered_masks[0, 2:5, 4:6].all()
+    assert not filtered_masks[0, 7, 4]
