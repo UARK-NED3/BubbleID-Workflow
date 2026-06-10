@@ -86,6 +86,8 @@ Segment still images and compute vapor fraction directly:
 bubbleid-workflow segment-images data/selected-images weights/model_1class.pth outputs/selected-images --threshold 0.4 --device cpu
 ```
 
+By default, still-image segmentation applies a conservative post-processing step that removes very dark, neutral, slab-like substrate patches near the bottom of predicted masks. Use `--no-substrate-filter` to keep the raw model masks.
+
 Create a reusable still-image case config:
 
 ```bash

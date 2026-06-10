@@ -26,7 +26,7 @@ def test_image_case_config_round_trips_paths(tmp_path: Path):
 
 
 def test_create_image_case_interactively_writes_student_friendly_config(tmp_path: Path):
-    answers = iter(["images", "model_1class.pth", "outputs/demo", "", "", ""])
+    answers = iter(["images", "model_1class.pth", "outputs/demo", "", "", "", ""])
 
     config_path = create_image_case_interactively(
         tmp_path / "image-case.json",
@@ -41,6 +41,7 @@ def test_create_image_case_interactively_writes_student_friendly_config(tmp_path
     assert data["threshold"] == 0.4
     assert data["device"] == "cpu"
     assert data["num_classes"] == 1
+    assert data["filter_substrate"] is True
 
 
 def test_run_image_case_delegates_to_segment_images(tmp_path: Path):
@@ -51,6 +52,7 @@ def test_run_image_case_delegates_to_segment_images(tmp_path: Path):
         threshold=0.5,
         device="cpu",
         num_classes=1,
+        filter_substrate=False,
     )
     calls = {}
 
@@ -82,3 +84,4 @@ def test_run_image_case_delegates_to_segment_images(tmp_path: Path):
     assert result.rows[0].vapor_fraction == 0.25
     assert calls["images_dir"] == config.images_dir
     assert calls["threshold"] == 0.5
+    assert calls["filter_substrate"] is False

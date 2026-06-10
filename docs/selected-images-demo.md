@@ -21,6 +21,8 @@ Outputs:
 - `masks/`: binary mask PNGs from the union of predicted bubble instances.
 - `overlays/`: image overlays with predicted masks, contours, bounding boxes, and scores.
 
+The default workflow removes very dark, neutral, slab-like substrate patches near the bottom of predicted masks. Add `--no-substrate-filter` to inspect raw model masks.
+
 Interpretation:
 
 Vapor fraction is computed as:

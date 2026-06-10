@@ -41,6 +41,112 @@ def vapor_fraction_from_masks(masks: np.ndarray, height: int, width: int) -> tup
     return vapor_pixels, vapor_pixels / float(height * width)
 
 
+def substrate_pixel_mask(
+    image_bgr: np.ndarray,
+    lower_fraction: float = 0.45,
+    max_chroma: int = 45,
+    max_intensity: int = 60,
+) -> np.ndarray:
+    if image_bgr.ndim != 3 or image_bgr.shape[2] != 3:
+        raise ValueError("Expected a BGR image with shape (height, width, 3).")
+    height = image_bgr.shape[0]
+    image_i16 = image_bgr.astype(np.int16)
+    chroma = image_i16.max(axis=2) - image_i16.min(axis=2)
+    intensity = image_i16.mean(axis=2)
+    lower_rows = np.arange(height)[:, None] >= int(height * lower_fraction)
+    return lower_rows & (chroma <= max_chroma) & (intensity <= max_intensity)
+
+
+def _boxes_from_masks(masks: np.ndarray) -> np.ndarray:
+    boxes: list[list[float]] = []
+    for mask in masks:
+        ys, xs = np.where(mask)
+        if len(xs) == 0:
+            continue
+        boxes.append([float(xs.min()), float(ys.min()), float(xs.max() + 1), float(ys.max() + 1)])
+    if not boxes:
+        return np.empty((0, 4))
+    return np.array(boxes, dtype=float)
+
+
+def _connected_components(binary: np.ndarray) -> tuple[np.ndarray, list[tuple[int, int, int, int, int]]]:
+    try:
+        import cv2
+
+        count, labels, stats, _ = cv2.connectedComponentsWithStats(binary.astype(np.uint8), connectivity=8)
+        components = [
+            (int(stats[label, cv2.CC_STAT_LEFT]), int(stats[label, cv2.CC_STAT_TOP]), int(stats[label, cv2.CC_STAT_WIDTH]), int(stats[label, cv2.CC_STAT_HEIGHT]), int(stats[label, cv2.CC_STAT_AREA]))
+            for label in range(1, count)
+        ]
+        return labels, components
+    except ImportError:
+        labels = np.zeros(binary.shape, dtype=np.int32)
+        components: list[tuple[int, int, int, int, int]] = []
+        current = 0
+        height, width = binary.shape
+        for start_y, start_x in np.argwhere(binary):
+            if labels[start_y, start_x]:
+                continue
+            current += 1
+            stack = [(int(start_y), int(start_x))]
+            labels[start_y, start_x] = current
+            xs: list[int] = []
+            ys: list[int] = []
+            while stack:
+                y, x = stack.pop()
+                ys.append(y)
+                xs.append(x)
+                for ny in range(max(0, y - 1), min(height, y + 2)):
+                    for nx in range(max(0, x - 1), min(width, x + 2)):
+                        if binary[ny, nx] and not labels[ny, nx]:
+                            labels[ny, nx] = current
+                            stack.append((ny, nx))
+            components.append((min(xs), min(ys), max(xs) - min(xs) + 1, max(ys) - min(ys) + 1, len(xs)))
+        return labels, components
+
+
+def _slab_like_substrate(mask: np.ndarray, substrate: np.ndarray) -> np.ndarray:
+    ys, xs = np.where(mask)
+    if len(xs) == 0:
+        return np.zeros_like(mask, dtype=bool)
+    mask_width = int(xs.max() - xs.min() + 1)
+    mask_height = int(ys.max() - ys.min() + 1)
+    mask_bottom = int(ys.max())
+    candidate = mask & substrate
+    labels, components = _connected_components(candidate)
+    remove = np.zeros_like(mask, dtype=bool)
+    for label, (x, y, width, height, area) in enumerate(components, start=1):
+        if area == 0:
+            continue
+        component_bottom = y + height - 1
+        near_bottom = component_bottom >= mask_bottom - max(3, int(mask_height * 0.08))
+        wide = width >= max(2, int(mask_width * 0.25))
+        flat = width >= height * 1.8
+        not_tall = height <= max(8, int(mask_height * 0.35))
+        if near_bottom and wide and flat and not_tall:
+            remove |= labels == label
+    return remove
+
+
+def remove_substrate_from_masks(
+    masks: np.ndarray,
+    scores: np.ndarray,
+    image_bgr: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    if masks.size == 0 or masks.shape[0] == 0:
+        height, width = image_bgr.shape[:2]
+        return np.zeros((0, height, width), dtype=bool), np.array([]), np.empty((0, 4))
+    substrate = substrate_pixel_mask(image_bgr)
+    filtered_masks = masks.astype(bool).copy()
+    for idx, mask in enumerate(filtered_masks):
+        filtered_masks[idx] = mask & ~_slab_like_substrate(mask, substrate)
+    keep = filtered_masks.reshape(filtered_masks.shape[0], -1).sum(axis=1) > 0
+    filtered_masks = filtered_masks[keep]
+    filtered_scores = scores[keep] if len(scores) == len(keep) else scores
+    boxes = _boxes_from_masks(filtered_masks)
+    return filtered_masks, filtered_scores, boxes
+
+
 def write_results_csv(rows: Iterable[ImageSegmentationResult], csv_path: str | Path) -> Path:
     path = Path(csv_path).expanduser().resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -88,6 +194,7 @@ def segment_images(
     num_classes: int = 1,
     save_masks: bool = True,
     save_overlays: bool = True,
+    filter_substrate: bool = True,
 ) -> SegmentImagesResult:
     import cv2
 
@@ -121,12 +228,13 @@ def segment_images(
             masks = instances.pred_masks.numpy().astype(bool)
             scores = instances.scores.numpy()
             boxes = instances.pred_boxes.tensor.numpy()
-            combined = np.any(masks, axis=0)
         else:
             masks = np.zeros((0, height, width), dtype=bool)
             scores = np.array([])
             boxes = np.empty((0, 4))
-            combined = np.zeros((height, width), dtype=bool)
+        if filter_substrate:
+            masks, scores, boxes = remove_substrate_from_masks(masks, scores, image)
+        combined = np.any(masks, axis=0) if len(masks) else np.zeros((height, width), dtype=bool)
 
         vapor_pixels, vapor_fraction = vapor_fraction_from_masks(masks, height, width)
         mask_u8 = (combined.astype(np.uint8) * 255)
@@ -154,7 +262,7 @@ def segment_images(
                 total_pixels=height * width,
                 bubble_mask_pixels=vapor_pixels,
                 vapor_fraction=vapor_fraction,
-                bubble_count=int(len(instances)),
+                bubble_count=int(len(masks)),
                 mean_score=float(scores.mean()) if len(scores) else "",
                 max_score=float(scores.max()) if len(scores) else "",
                 threshold=threshold,
@@ -169,6 +277,7 @@ def segment_images(
         "threshold": threshold,
         "device": device,
         "num_classes": num_classes,
+        "filter_substrate": filter_substrate,
         "weights": str(weights_path),
         "mean_vapor_fraction": float(np.mean(vapor_fractions)),
         "min_vapor_fraction": float(np.min(vapor_fractions)),

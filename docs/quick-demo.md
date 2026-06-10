@@ -43,6 +43,8 @@ Important files:
 - `overlays/`: original images with predicted masks, contours, boxes, and scores.
 - `overlay_contact_sheet.jpg`: a quick visual review sheet.
 
+The demo applies a conservative substrate filter to reduce cases where the black lower slab is counted as vapor. For comparison with raw model masks, rerun `bubbleid-workflow segment-images` with `--no-substrate-filter`.
+
 ## What The Numbers Mean
 
 For each still image, BubbleID Workflow reports:

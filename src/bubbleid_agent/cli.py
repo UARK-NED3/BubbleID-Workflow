@@ -65,6 +65,7 @@ def cmd_segment_images(args: argparse.Namespace) -> int:
         num_classes=args.num_classes,
         save_masks=not args.no_masks,
         save_overlays=not args.no_overlays,
+        filter_substrate=not args.no_substrate_filter,
     )
     _print_json(
         {
@@ -114,6 +115,7 @@ def build_parser() -> argparse.ArgumentParser:
     segment.add_argument("--num-classes", type=int, default=1, help="Number of instance-segmentation classes.")
     segment.add_argument("--no-masks", action="store_true", help="Do not write binary mask PNG files.")
     segment.add_argument("--no-overlays", action="store_true", help="Do not write overlay JPG files.")
+    segment.add_argument("--no-substrate-filter", action="store_true", help="Keep raw model masks without removing neutral lower-substrate pixels.")
     segment.set_defaults(func=cmd_segment_images)
 
     init_image = subparsers.add_parser("init-image-case", help="Interactively create a still-image analysis config.")

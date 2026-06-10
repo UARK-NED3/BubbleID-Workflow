@@ -6,5 +6,6 @@
   "device": "cpu",
   "num_classes": 1,
   "save_masks": true,
-  "save_overlays": true
+  "save_overlays": true,
+  "filter_substrate": true
 }
