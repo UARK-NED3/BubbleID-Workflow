@@ -57,6 +57,17 @@ def substrate_pixel_mask(
     return lower_rows & (chroma <= max_chroma) & (intensity <= max_intensity)
 
 
+def surface_type_from_name(name: str) -> str | None:
+    lowered = name.lower()
+    if "flat" in lowered:
+        return "flat"
+    if "_mp" in lowered or " mp" in lowered or "-mp" in lowered:
+        return "mp"
+    if "_mc" in lowered or " mc" in lowered or "-mc" in lowered:
+        return "mc"
+    return None
+
+
 def _boxes_from_masks(masks: np.ndarray) -> np.ndarray:
     boxes: list[list[float]] = []
     for mask in masks:
@@ -102,7 +113,58 @@ def _connected_components(binary: np.ndarray) -> tuple[np.ndarray, list[tuple[in
                             labels[ny, nx] = current
                             stack.append((ny, nx))
             components.append((min(xs), min(ys), max(xs) - min(xs) + 1, max(ys) - min(ys) + 1, len(xs)))
-        return labels, components
+    return labels, components
+
+
+def substrate_reference_mask(reference_bgr: np.ndarray, lower_fraction: float = 0.45, max_intensity: int = 190) -> np.ndarray:
+    if reference_bgr.ndim != 3 or reference_bgr.shape[2] != 3:
+        raise ValueError("Expected a BGR reference image with shape (height, width, 3).")
+    height = reference_bgr.shape[0]
+    gray = reference_bgr.astype(np.int16).mean(axis=2)
+    lower_rows = np.arange(height)[:, None] >= int(height * lower_fraction)
+    candidate = lower_rows & (gray <= max_intensity)
+    labels, components = _connected_components(candidate)
+    substrate = np.zeros_like(candidate, dtype=bool)
+    min_area = max(3, int(height * reference_bgr.shape[1] * 0.002))
+    for label, (_x, y, _width, component_height, area) in enumerate(components, start=1):
+        touches_bottom = y + component_height >= height - 1
+        if touches_bottom and area >= min_area:
+            substrate |= labels == label
+    return substrate
+
+
+def _resize_bool_mask(mask: np.ndarray, shape: tuple[int, int]) -> np.ndarray:
+    try:
+        import cv2
+
+        return cv2.resize(mask.astype(np.uint8), (shape[1], shape[0]), interpolation=cv2.INTER_NEAREST).astype(bool)
+    except ImportError:
+        y_idx = (np.linspace(0, mask.shape[0] - 1, shape[0])).astype(int)
+        x_idx = (np.linspace(0, mask.shape[1] - 1, shape[1])).astype(int)
+        return mask[np.ix_(y_idx, x_idx)]
+
+
+def load_substrate_reference_masks(reference_dir: str | Path, target_shape: tuple[int, int]) -> dict[str, np.ndarray]:
+    try:
+        import cv2
+    except ImportError as exc:
+        raise ImportError("OpenCV is required to load substrate reference images.") from exc
+
+    root = Path(reference_dir).expanduser().resolve()
+    if not root.exists():
+        raise FileNotFoundError(f"Substrate reference directory does not exist: {root}")
+    masks: dict[str, np.ndarray] = {}
+    for path in _image_paths(root):
+        surface = surface_type_from_name(path.name)
+        if surface is None:
+            continue
+        reference = cv2.imread(str(path))
+        if reference is None:
+            raise ValueError(f"Could not read substrate reference image: {path}")
+        masks[surface] = _resize_bool_mask(substrate_reference_mask(reference), target_shape)
+    if not masks:
+        raise ValueError(f"No Flat/MP/MC substrate reference images found in {root}")
+    return masks
 
 
 def _slab_like_substrate(mask: np.ndarray, substrate: np.ndarray) -> np.ndarray:
@@ -128,11 +190,28 @@ def _slab_like_substrate(mask: np.ndarray, substrate: np.ndarray) -> np.ndarray:
     return remove
 
 
+def _remove_reference_substrate_components(mask: np.ndarray, reference_mask: np.ndarray) -> np.ndarray:
+    labels, components = _connected_components(mask)
+    filtered = mask.copy()
+    image_area = mask.shape[0] * mask.shape[1]
+    max_component_area = max(100, int(image_area * 0.025))
+    min_y = int(mask.shape[0] * 0.62)
+    for label, (_x, y, _width, _height, area) in enumerate(components, start=1):
+        if area == 0 or area > max_component_area or y < min_y:
+            continue
+        component = labels == label
+        reference_overlap = float((component & reference_mask).sum()) / float(area)
+        if reference_overlap >= 0.45:
+            filtered[component] = False
+    return filtered
+
+
 def remove_substrate_from_masks(
     masks: np.ndarray,
     scores: np.ndarray,
     image_bgr: np.ndarray,
     strength: str = "aggressive",
+    reference_mask: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     if masks.size == 0 or masks.shape[0] == 0:
         height, width = image_bgr.shape[:2]
@@ -147,6 +226,10 @@ def remove_substrate_from_masks(
         filtered_masks &= ~substrate
     else:
         raise ValueError(f"Unknown substrate filter strength: {strength}")
+    if reference_mask is not None:
+        reference_bool = reference_mask.astype(bool)
+        for idx, mask in enumerate(filtered_masks):
+            filtered_masks[idx] = _remove_reference_substrate_components(mask, reference_bool)
     keep = filtered_masks.reshape(filtered_masks.shape[0], -1).sum(axis=1) > 0
     filtered_masks = filtered_masks[keep]
     filtered_scores = scores[keep] if len(scores) == len(keep) else scores
@@ -213,6 +296,7 @@ def segment_images(
     save_overlays: bool = True,
     filter_substrate: bool = True,
     substrate_filter_strength: str = "aggressive",
+    substrate_references_dir: str | Path | None = None,
 ) -> SegmentImagesResult:
     import cv2
 
@@ -234,6 +318,12 @@ def segment_images(
         raise FileNotFoundError(f"Model weights do not exist: {weights_path}")
 
     predictor = _build_predictor(weights_path, threshold, device, num_classes)
+    reference_masks: dict[str, np.ndarray] = {}
+    if substrate_references_dir is not None:
+        first_image = cv2.imread(str(paths[0]))
+        if first_image is None:
+            raise ValueError(f"Could not read image: {paths[0]}")
+        reference_masks = load_substrate_reference_masks(substrate_references_dir, first_image.shape[:2])
     rows: list[ImageSegmentationResult] = []
     for image_path in paths:
         image = cv2.imread(str(image_path))
@@ -251,7 +341,8 @@ def segment_images(
             scores = np.array([])
             boxes = np.empty((0, 4))
         if filter_substrate:
-            masks, scores, boxes = remove_substrate_from_masks(masks, scores, image, strength=substrate_filter_strength)
+            reference_mask = reference_masks.get(surface_type_from_name(image_path.name)) if reference_masks else None
+            masks, scores, boxes = remove_substrate_from_masks(masks, scores, image, strength=substrate_filter_strength, reference_mask=reference_mask)
         combined = np.any(masks, axis=0) if len(masks) else np.zeros((height, width), dtype=bool)
 
         vapor_pixels, vapor_fraction = vapor_fraction_from_masks(masks, height, width)
@@ -294,6 +385,7 @@ def segment_images(
         "num_classes": num_classes,
         "filter_substrate": filter_substrate,
         "substrate_filter_strength": substrate_filter_strength if filter_substrate else "none",
+        "substrate_references_dir": str(Path(substrate_references_dir).expanduser().resolve()) if substrate_references_dir is not None else "",
         "weights": str(weights_path),
         "mean_vapor_fraction": float(np.mean(vapor_fractions)),
         "min_vapor_fraction": float(np.min(vapor_fractions)),

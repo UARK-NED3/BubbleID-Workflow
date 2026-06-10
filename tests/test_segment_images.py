@@ -7,7 +7,9 @@ from bubbleid_agent.segment_images import (
     ImageSegmentationResult,
     apply_mask_overlay,
     remove_substrate_from_masks,
+    substrate_reference_mask,
     substrate_pixel_mask,
+    surface_type_from_name,
     vapor_fraction_from_masks,
     write_results_csv,
 )
@@ -75,6 +77,25 @@ def test_substrate_pixel_mask_finds_dark_neutral_lower_slab():
     assert not substrate[4, 1]
 
 
+def test_surface_type_from_name_matches_demo_filenames():
+    assert surface_type_from_name("2_Flat Cu_10 kPa_CHF_B-285_Frame-35831.jpg") == "flat"
+    assert surface_type_from_name("17_MP Cu_100 kPa_CHF_B-319_Frame-12678.jpg") == "mp"
+    assert surface_type_from_name("25_MC Cu_100 kPa_ONB_B-372_Frame-3083.jpg") == "mc"
+    assert surface_type_from_name("unknown.jpg") is None
+
+
+def test_substrate_reference_mask_keeps_bottom_surface_not_background_band():
+    image = np.full((10, 10, 3), 240, dtype=np.uint8)
+    image[4:6, :, :] = [40, 40, 40]
+    image[7:, 2:8, :] = [70, 70, 70]
+
+    substrate = substrate_reference_mask(image)
+
+    assert not substrate[4, 5]
+    assert substrate[9, 5]
+    assert not substrate[9, 0]
+
+
 def test_conservative_substrate_filter_keeps_bubble_and_removes_slab():
     image = np.full((6, 6, 3), 245, dtype=np.uint8)
     image[4:, :, :] = [45, 45, 45]
@@ -104,6 +125,27 @@ def test_aggressive_substrate_filter_removes_lower_neutral_band():
 
     assert filtered_masks[0, 2:5, 4:6].all()
     assert not filtered_masks[0, 7, 4]
+
+
+def test_reference_substrate_filter_removes_surface_template_region():
+    image = np.full((8, 8, 3), 240, dtype=np.uint8)
+    image[2:4, 3:5, :] = [35, 35, 190]
+    mask = np.zeros((1, 8, 8), dtype=bool)
+    mask[0, 2:4, 3:5] = True
+    mask[0, 6:8, 2:7] = True
+    reference_mask = np.zeros((8, 8), dtype=bool)
+    reference_mask[6:8, 1:7] = True
+
+    filtered_masks, _, _ = remove_substrate_from_masks(
+        mask,
+        np.array([0.8]),
+        image,
+        strength="aggressive",
+        reference_mask=reference_mask,
+    )
+
+    assert filtered_masks[0, 2:4, 3:5].all()
+    assert not filtered_masks[0, 6, 3]
 
 
 def test_apply_mask_overlay_uses_consistent_red_tint():

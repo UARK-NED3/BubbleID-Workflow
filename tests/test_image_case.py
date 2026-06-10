@@ -26,7 +26,7 @@ def test_image_case_config_round_trips_paths(tmp_path: Path):
 
 
 def test_create_image_case_interactively_writes_student_friendly_config(tmp_path: Path):
-    answers = iter(["images", "model_1class.pth", "outputs/demo", "", "", "", "", ""])
+    answers = iter(["images", "model_1class.pth", "outputs/demo", "", "", "", "", "", ""])
 
     config_path = create_image_case_interactively(
         tmp_path / "image-case.json",
@@ -43,6 +43,7 @@ def test_create_image_case_interactively_writes_student_friendly_config(tmp_path
     assert data["num_classes"] == 1
     assert data["filter_substrate"] is True
     assert data["substrate_filter_strength"] == "aggressive"
+    assert data["substrate_references_dir"] is None
 
 
 def test_run_image_case_delegates_to_segment_images(tmp_path: Path):
@@ -55,6 +56,7 @@ def test_run_image_case_delegates_to_segment_images(tmp_path: Path):
         num_classes=1,
         filter_substrate=False,
         substrate_filter_strength="conservative",
+        substrate_references_dir=tmp_path / "refs",
     )
     calls = {}
 
@@ -88,3 +90,4 @@ def test_run_image_case_delegates_to_segment_images(tmp_path: Path):
     assert calls["threshold"] == 0.5
     assert calls["filter_substrate"] is False
     assert calls["substrate_filter_strength"] == "conservative"
+    assert calls["substrate_references_dir"] == tmp_path / "refs"

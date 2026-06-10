@@ -43,7 +43,7 @@ Important files:
 - `overlays/`: original images with predicted masks, contours, boxes, and scores.
 - `overlay_contact_sheet.jpg`: a quick visual review sheet.
 
-The demo applies an aggressive substrate filter to reduce cases where the black lower slab is counted as vapor. This may remove some real lower bubble pixels, so review the overlays. For a lighter cleanup, rerun `bubbleid-workflow segment-images` with `--substrate-filter-strength conservative`; for raw model masks, use `--no-substrate-filter`.
+The demo applies an aggressive substrate filter and uses the Flat/MP/MC reference images in `examples/substrate-references` to reduce cases where the lower substrate is counted as vapor. This may remove some real lower bubble pixels, so review the overlays. For a lighter cleanup, rerun `bubbleid-workflow segment-images` with `--substrate-filter-strength conservative`; for raw model masks, use `--no-substrate-filter`.
 
 ## What The Numbers Mean
 

@@ -24,6 +24,7 @@ class ImageCaseConfig:
     save_overlays: bool = True
     filter_substrate: bool = True
     substrate_filter_strength: str = "aggressive"
+    substrate_references_dir: Path | None = None
 
     def write(self, path: str | Path) -> Path:
         target = Path(path).expanduser().resolve()
@@ -31,6 +32,8 @@ class ImageCaseConfig:
         data = asdict(self)
         for key in ["images_dir", "weights", "output_dir"]:
             data[key] = str(data[key]).replace("\\", "/")
+        if data["substrate_references_dir"] is not None:
+            data["substrate_references_dir"] = str(data["substrate_references_dir"]).replace("\\", "/")
         target.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
         return target
 
@@ -59,6 +62,7 @@ def load_image_case(path: str | Path) -> ImageCaseConfig:
         save_overlays=bool(raw.get("save_overlays", True)),
         filter_substrate=bool(raw.get("filter_substrate", True)),
         substrate_filter_strength=raw.get("substrate_filter_strength", "aggressive"),
+        substrate_references_dir=_resolve_from(config_path, raw["substrate_references_dir"]) if raw.get("substrate_references_dir") else None,
     )
 
 
@@ -86,6 +90,7 @@ def create_image_case_interactively(
     num_classes = int(_ask(input_fn, "Number of segmentation classes", "1"))
     filter_substrate = _ask(input_fn, "Remove dark lower substrate from masks", "yes").lower() in {"y", "yes", "true", "1"}
     substrate_filter_strength = _ask(input_fn, "Substrate filter strength", "aggressive")
+    substrate_references_dir = _ask(input_fn, "Substrate reference folder", "")
     config = ImageCaseConfig(
         images_dir=Path(images_dir),
         weights=Path(weights),
@@ -95,6 +100,7 @@ def create_image_case_interactively(
         num_classes=num_classes,
         filter_substrate=filter_substrate,
         substrate_filter_strength=substrate_filter_strength,
+        substrate_references_dir=Path(substrate_references_dir) if substrate_references_dir else None,
     )
     written = config.write(target)
     output_fn(f"Wrote image-case config: {written}")
@@ -114,4 +120,5 @@ def run_image_case(config: ImageCaseConfig, segment_fn=segment_images) -> Segmen
         save_overlays=config.save_overlays,
         filter_substrate=config.filter_substrate,
         substrate_filter_strength=config.substrate_filter_strength,
+        substrate_references_dir=config.substrate_references_dir,
     )

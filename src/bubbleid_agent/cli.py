@@ -67,6 +67,7 @@ def cmd_segment_images(args: argparse.Namespace) -> int:
         save_overlays=not args.no_overlays,
         filter_substrate=not args.no_substrate_filter,
         substrate_filter_strength=args.substrate_filter_strength,
+        substrate_references_dir=args.substrate_references_dir,
     )
     _print_json(
         {
@@ -123,6 +124,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="aggressive",
         help="Substrate cleanup strength. Aggressive removes more of the black slab but may remove some lower bubble pixels.",
     )
+    segment.add_argument("--substrate-references-dir", help="Optional folder containing Flat/MP/MC substrate reference images.")
     segment.set_defaults(func=cmd_segment_images)
 
     init_image = subparsers.add_parser("init-image-case", help="Interactively create a still-image analysis config.")

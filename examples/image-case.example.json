@@ -8,5 +8,6 @@
   "save_masks": true,
   "save_overlays": true,
   "filter_substrate": true,
-  "substrate_filter_strength": "aggressive"
+  "substrate_filter_strength": "aggressive",
+  "substrate_references_dir": "examples/substrate-references"
 }
