@@ -21,7 +21,7 @@ Outputs:
 - `masks/`: binary mask PNGs from the union of predicted bubble instances.
 - `overlays/`: image overlays with predicted masks, contours, bounding boxes, and scores.
 
-The default demo workflow removes dark, neutral lower-substrate pixels from predicted masks and uses surface-specific reference images in `examples/substrate-references`. Add `--substrate-filter-strength conservative` for a lighter cleanup or `--no-substrate-filter` to inspect raw model masks.
+The default workflow removes dark, neutral lower-substrate pixels from predicted masks. Add `--substrate-filter-strength conservative` for a lighter cleanup or `--no-substrate-filter` to inspect raw model masks.
 
 Interpretation:
 

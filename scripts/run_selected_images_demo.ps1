@@ -3,7 +3,6 @@ param(
     [string]$ReleaseTag = "demo-assets-v0.1",
     [double]$Threshold = 0.4,
     [string]$Device = "cpu",
-    [string]$SubstrateReferencesDir = "examples\substrate-references",
     [switch]$SkipInstall,
     [switch]$ForceDownload
 )
@@ -102,11 +101,7 @@ if ($ForceDownload -or -not (Get-ChildItem $ImagesDir -Filter *.jpg -ErrorAction
 }
 
 Write-Step "Running BubbleID Workflow segmentation"
-$segmentArgs = @("segment-images", $ImagesDir, $WeightsPath, $OutputDir, "--threshold", $Threshold, "--device", $Device)
-if ($SubstrateReferencesDir -and (Test-Path $SubstrateReferencesDir)) {
-    $segmentArgs += @("--substrate-references-dir", $SubstrateReferencesDir)
-}
-& $PythonExe -m bubbleid_agent.cli @segmentArgs
+& $PythonExe -m bubbleid_agent.cli segment-images $ImagesDir $WeightsPath $OutputDir --threshold $Threshold --device $Device
 
 Write-Step "Building overlay contact sheet"
 $contactSheetScript = Join-Path $DemoRoot "make_contact_sheet.py"

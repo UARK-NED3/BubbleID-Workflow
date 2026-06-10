@@ -88,8 +88,6 @@ bubbleid-workflow segment-images data/selected-images weights/model_1class.pth o
 
 By default, still-image segmentation applies an aggressive post-processing step that removes dark, neutral lower-substrate pixels from predicted masks. This reduces slab inclusion in the demo case, but may remove some real lower bubble pixels. Use `--substrate-filter-strength conservative` for a lighter cleanup, or `--no-substrate-filter` to keep raw model masks.
 
-For datasets with matching beginning-of-test substrate images, pass `--substrate-references-dir` with Flat/MP/MC reference images. The selected-images demo uses the reference images in `examples/substrate-references` to remove additional lower substrate components.
-
 Create a reusable still-image case config:
 
 ```bash
