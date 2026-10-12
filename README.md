@@ -2,6 +2,9 @@
 
 BubbleID Workflow Toolkit is a reproducible workflow layer for [BubbleID](https://github.com/cldunlap73/BubbleID), the computer-vision framework for boiling bubble dynamics analysis.
 
+Repository scope, evidence, and reuse boundaries are also available in the
+[NED3 resource manifest](.ned3/resource-manifest-v0.1.json).
+
 BubbleID remains the scientific engine for segmentation, classification, tracking, vapor fraction, departure rate, bubble statistics, and interface velocity. This toolkit handles the surrounding research workflow: project checks, reproducible configs, still-image segmentation runs, output inspection, and report drafting.
 
 ## Why This Repo Is Separate
